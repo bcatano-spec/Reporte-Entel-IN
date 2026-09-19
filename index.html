@@ -777,7 +777,7 @@
       <div style="overflow-x:auto;max-height:420px;overflow-y:auto;">
       <table>
         <thead>
-          <tr><th>#</th><th>Asesor</th><th class="num">Escuchas (Q)</th><th class="num">Adherencia</th><th class="num">Explica NO corresponde</th><th class="num">Confirma SMS</th><th class="num">Evita comentarios negativos</th><th class="num">Total Errores</th></tr>
+          <tr><th>#</th><th>Asesor</th><th class="num">Escuchas (Q)</th><th class="num">Explica NO corresponde</th><th class="num">Confirma SMS</th><th class="num">Evita comentarios negativos</th><th class="num">Total Errores</th></tr>
         </thead>
         <tbody id="vas-tbl-reincidencia"></tbody>
       </table>
@@ -2732,14 +2732,13 @@ const EPA_RECORDS = __payload.EPA_RECORDS;
     arr.forEach(r=>{ if(r.nombre) (groups[r.nombre]=groups[r.nombre]||[]).push(r); });
     const errCount = (items,key)=> items.filter(r=> r[key]===false).length;
     const rows = Object.entries(groups).map(([nombre, items])=>{
-      const eAdh = errCount(items,'adherencia');
       const eExplica = errCount(items,'explicaNo');
       const eSms = errCount(items,'confirmaSMS');
       const eNeg = errCount(items,'noMencionaNeg');
-      return { nombre, q: items.length, eAdh, eExplica, eSms, eNeg, total: eAdh+eExplica+eSms+eNeg };
+      return { nombre, q: items.length, eExplica, eSms, eNeg, total: eExplica+eSms+eNeg };
     }).sort((a,b)=> b.total-a.total);
-    if(!rows.length){ body.innerHTML = '<tr><td colspan="8" class="empty-note">No hay evaluaciones VAS Premium para este filtro.</td></tr>'; return; }
-    const maxErr = Math.max(1, ...rows.flatMap(r=>[r.eAdh,r.eExplica,r.eSms,r.eNeg]));
+    if(!rows.length){ body.innerHTML = '<tr><td colspan="7" class="empty-note">No hay evaluaciones VAS Premium para este filtro.</td></tr>'; return; }
+    const maxErr = Math.max(1, ...rows.flatMap(r=>[r.eExplica,r.eSms,r.eNeg]));
     const cell = v => {
       if(!v) return `<td class="num">0</td>`;
       const t = Math.min(v/maxErr, 1);
@@ -2751,7 +2750,7 @@ const EPA_RECORDS = __payload.EPA_RECORDS;
       const tr = document.createElement('tr');
       tr.innerHTML = `<td class="rank">${i+1}</td><td class="plat-name">${r.nombre}</td>
         <td class="num">${r.q}</td>
-        ${cell(r.eAdh)}${cell(r.eExplica)}${cell(r.eSms)}${cell(r.eNeg)}
+        ${cell(r.eExplica)}${cell(r.eSms)}${cell(r.eNeg)}
         <td class="num" style="font-weight:800;${r.total>0?'color:#b02338;':''}">${r.total}</td>`;
       body.appendChild(tr);
     });
@@ -3157,7 +3156,7 @@ const EPA_RECORDS = __payload.EPA_RECORDS;
     const rows = Object.values(groups).map(items=>({
       jefe: items[0].jefe, plataforma: items[0].plataforma, items,
       total: avgPct(items,'ofrecimientoPct')
-    })).sort((a,b)=> a.jefe.localeCompare(b.jefe,'es'));
+    })).sort((a,b)=> (b.total??-1) - (a.total??-1));
     rows.forEach((r,i)=>{
       const tr = document.createElement('tr');
       const cells = semanas.map(s=>{
@@ -4109,6 +4108,15 @@ const EPA_RECORDS = __payload.EPA_RECORDS;
 
   let epaSupDim = 'supervisor';
   let epaSupView = 'general';
+  function dominantMeta(items){
+    const counts = {};
+    items.forEach(r=>{ if(r.plataformaOk) counts[r.plataformaOk] = (counts[r.plataformaOk]||0)+1; });
+    let best=null, bestN=0;
+    Object.entries(counts).forEach(([k,n])=>{ if(n>bestN){ best=k; bestN=n; } });
+    if(!best) return null;
+    const rec = items.find(r=>r.plataformaOk===best && r.metaPlataforma!=null);
+    return rec ? rec.metaPlataforma : null;
+  }
   function renderSupervisorTable(arr){
     const body = document.getElementById('epa-tbl-supervisor');
     const thead = document.getElementById('epa-sup-thead');
@@ -4116,6 +4124,7 @@ const EPA_RECORDS = __payload.EPA_RECORDS;
     const dimKey = epaSupDim; // 'supervisor' | 'antiguedad'
     const dimLabel = epaSupDim==='supervisor' ? 'Supervisor' : 'Antigüedad';
     const antigOrder = ['OJT','1 A 3 MESES','3 A 6 MESES','> 6 MESES'];
+    const semaforize = dimKey==='supervisor';
 
     if(epaSupView === 'semana'){
       const semanas = uniqueSorted(arr.map(r=>r.semana)).sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
@@ -4132,10 +4141,13 @@ const EPA_RECORDS = __payload.EPA_RECORDS;
       if(!dimKeys.length){ body.innerHTML = `<tr><td colspan="${colCount}" class="empty-note">No hay datos para este filtro.</td></tr>`; return; }
       dimKeys.forEach((dv,i)=>{
         const items = groups[dv];
+        const meta = semaforize ? dominantMeta(items) : null;
         const cells = semanas.map(s=>{
           const wkItems = items.filter(r=>r.semana===s);
           if(!wkItems.length) return `<td class="num-center" style="border-left:1px solid var(--border);">–</td><td class="num-center">–</td><td class="num-center">–</td>`;
-          return `<td class="num-center" style="border-left:1px solid var(--border);">${wkItems.length}</td><td class="num-center">${fmt0(avgScore(wkItems,'epa'))}</td><td class="num-center">${fmt0(avgScore(wkItems,'empatia'))}</td>`;
+          const wkEpa = avgScore(wkItems,'epa');
+          const style = semaforize ? epaSemaforo(wkEpa, meta) : '';
+          return `<td class="num-center" style="border-left:1px solid var(--border);">${wkItems.length}</td><td class="num-center" style="${style}">${fmt0(wkEpa)}</td><td class="num-center">${fmt0(avgScore(wkItems,'empatia'))}</td>`;
         }).join('');
         const tr = document.createElement('tr');
         tr.innerHTML = `<td class="rank">${i+1}</td><td class="plat-name">${dv}</td>${cells}`;
@@ -4148,7 +4160,8 @@ const EPA_RECORDS = __payload.EPA_RECORDS;
     const groups = {};
     arr.forEach(r=>{ if(r[dimKey]) (groups[r[dimKey]]=groups[r[dimKey]]||[]).push(r); });
     let rows = Object.entries(groups).map(([dv, items])=>({
-      dv, q: items.length, epa: avgScore(items,'epa'), empatia: avgScore(items,'empatia'), resolucion: avgScore(items,'resolucion')
+      dv, q: items.length, epa: avgScore(items,'epa'), empatia: avgScore(items,'empatia'), resolucion: avgScore(items,'resolucion'),
+      meta: semaforize ? dominantMeta(items) : null
     }));
     rows = dimKey==='antiguedad'
       ? rows.sort((a,b)=> antigOrder.indexOf(a.dv)-antigOrder.indexOf(b.dv))
@@ -4157,8 +4170,9 @@ const EPA_RECORDS = __payload.EPA_RECORDS;
     rows.forEach((r,i)=>{
       const tr = document.createElement('tr');
       const clickable = dimKey==='supervisor';
+      const style = semaforize ? epaSemaforo(r.epa, r.meta) : '';
       tr.innerHTML = `<td class="rank">${i+1}</td><td class="plat-name${clickable?' clickable':''}">${r.dv}</td>
-        <td class="num-center">${r.q}</td><td class="num-center">${fmt0(r.epa)}</td><td class="num-center">${fmt0(r.empatia)}</td><td class="num-center">${fmt0(r.resolucion)}</td>`;
+        <td class="num-center">${r.q}</td><td class="num-center" style="${style}">${fmt0(r.epa)}</td><td class="num-center">${fmt0(r.empatia)}</td><td class="num-center">${fmt0(r.resolucion)}</td>`;
       if(clickable){
         tr.querySelector('.plat-name').addEventListener('click', ()=>{
           epaSel.supervisor = r.dv;
