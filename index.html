@@ -335,6 +335,34 @@
     .tagline{text-align:left;}
     .modal-facts{grid-template-columns:1fr;}
   }
+
+  /* ---------- ASISTENTE (chat con los datos del dashboard; IA opcional, ver BI\chatbot_ia) ---------- */
+  .chat-fab{position:fixed;right:22px;bottom:22px;z-index:300;background:var(--blue);color:#fff;border:none;border-radius:28px;padding:13px 20px;font-weight:800;font-size:13.5px;cursor:pointer;box-shadow:0 10px 26px -6px rgba(10,90,209,.55);font-family:inherit;display:flex;align-items:center;gap:8px;}
+  .chat-fab:hover{filter:brightness(1.08);}
+  .chat-panel{position:fixed;right:22px;bottom:22px;z-index:301;width:420px;max-width:calc(100vw - 32px);height:600px;max-height:calc(100vh - 44px);background:var(--bg-panel);border:1px solid var(--border);border-radius:16px;box-shadow:0 22px 50px -10px rgba(10,20,40,.35);display:flex;flex-direction:column;overflow:hidden;}
+  .chat-panel.hidden{display:none;}
+  .chat-head{background:#0c1c37;color:#fff;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;}
+  .chat-head b{font-size:14px;}
+  .chat-head span{display:block;font-size:11px;opacity:.75;margin-top:2px;}
+  .chat-head button{background:rgba(255,255,255,.12);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;}
+  .chat-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--bg-soft);}
+  .chat-msg{max-width:92%;padding:9px 12px;border-radius:12px;font-size:12.8px;line-height:1.45;flex-shrink:0;}
+  .chat-msg.user{align-self:flex-end;background:var(--blue);color:#fff;border-bottom-right-radius:4px;}
+  .chat-msg.bot{align-self:flex-start;background:var(--bg-panel);border:1px solid var(--border);border-bottom-left-radius:4px;overflow-x:auto;min-width:0;overflow-wrap:anywhere;}
+  .chat-msg.bot table{font-size:11.8px;margin-top:6px;width:100%;table-layout:auto;border-collapse:collapse;}
+  .chat-msg.bot tbody td,.chat-msg.bot thead th{white-space:normal;word-break:normal;overflow-wrap:anywhere;vertical-align:top;text-align:left;}
+  .chat-msg.bot td.num,.chat-msg.bot th.num{white-space:nowrap;text-align:right;}
+  .chat-msg.bot tbody td{padding:4px 6px;border-top:1px solid var(--border);}
+  .chat-msg.bot thead th{padding:0 6px 5px;font-size:10px;color:var(--text-dim);text-transform:uppercase;}
+  .chat-msg.bot ul{margin:4px 0 0;padding-left:18px;}
+  .chat-msg .muted{color:var(--text-dim);font-size:11.5px;margin-top:4px;}
+  .chat-sug{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+  .chat-sug button{background:#eaf2fe;color:var(--blue);border:1px solid #cfe0fb;border-radius:14px;padding:4px 10px;font-size:11.5px;cursor:pointer;font-family:inherit;font-weight:600;}
+  .chat-sug button:hover{background:#dbe8fd;}
+  .chat-input{display:flex;gap:8px;padding:10px;border-top:1px solid var(--border);background:var(--bg-panel);}
+  .chat-input input{flex:1;border:1px solid var(--border);border-radius:10px;padding:9px 11px;font-size:13px;font-family:inherit;outline:none;}
+  .chat-input input:focus{border-color:var(--blue);}
+  .chat-input button{background:var(--blue);color:#fff;border:none;border-radius:10px;padding:0 14px;font-weight:700;cursor:pointer;font-family:inherit;}
 </style>
 </head>
 <body>
@@ -5104,6 +5132,411 @@ function mesEnCurso(registros, campoFecha){
 })();
 
 
+</script>
+
+<!-- Asistente: responde con los datos del dashboard (bases Adherencias y Reporte EPA), en el navegador.
+     Las preguntas abiertas van a la IA solo si CHAT_IA_URL tiene la URL del Worker (ver BI\chatbot_ia\LEEME.txt). -->
+<button type="button" class="chat-fab" id="chat-fab">💬 Asistente</button>
+<div class="chat-panel hidden" id="chat-panel">
+  <div class="chat-head">
+    <div><b>Asistente de Calidad</b><span>Responde con las bases de Adherencias y Reporte EPA</span></div>
+    <button type="button" id="chat-close" aria-label="Cerrar">✕</button>
+  </div>
+  <div class="chat-body" id="chat-body"></div>
+  <form class="chat-input" id="chat-form" autocomplete="off">
+    <input type="text" id="chat-text" placeholder="Ej.: ¿cómo le fue a Diego en octubre?">
+    <button type="submit">Enviar</button>
+  </form>
+</div>
+<script>
+(function(){
+  /* URL del intermediario de IA gratuito (Cloudflare Worker, ver BI\chatbot_ia\LEEME.txt).
+     Vacío = el asistente responde solo las preguntas que entiende con los datos del dashboard. */
+  var CHAT_IA_URL = '';
+  var historialIA = [];   // últimos turnos (texto) para que la IA siga la conversación
+  var ultimaPersona = null, ultimoMes = null;
+
+  /* ---------- utilidades ---------- */
+  function $(id){ return document.getElementById(id); }
+  function isNum(v){ return typeof v === 'number' && !isNaN(v); }
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function norm(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+  function titulo(s){ return String(s||'').toLowerCase().replace(/(^|\s)\S/g, function(c){ return c.toUpperCase(); }); }
+  function prom(arr, key){ var v = arr.map(function(r){return r[key];}).filter(isNum); return v.length ? v.reduce(function(a,b){return a+b;},0)/v.length : null; }
+  function promBool(arr, key){ var v = arr.map(function(r){return r[key];}).filter(function(x){return x===true||x===false;}); return v.length ? v.filter(function(x){return x;}).length/v.length*100 : null; }
+  function p1(v){ return isNum(v) ? v.toFixed(1)+'%' : '–'; }
+  function p0(v){ return isNum(v) ? Math.round(v)+'%' : '–'; }
+  function n1(v){ return isNum(v) ? v.toFixed(1) : '–'; }
+  function n0(v){ return isNum(v) ? String(Math.round(v)) : '–'; }
+  function delta(cur, prev, sufijo){
+    if(!isNum(cur) || !isNum(prev)) return '';
+    var d = cur-prev;
+    return ' <span style="color:'+(d>=0?'var(--green)':'var(--red)')+';font-weight:700;">'+(d>=0?'▲':'▼')+Math.abs(d).toFixed(1)+(sufijo||' pp')+'</span>';
+  }
+  function tabla(cab, filas){
+    return '<table><thead><tr>'+cab.map(function(c,i){return '<th'+(i?' class="num"':'')+'>'+c+'</th>';}).join('')+'</tr></thead><tbody>'+
+      filas.map(function(f){ return '<tr>'+f.map(function(c,i){return '<td'+(i?' class="num"':'')+'>'+c+'</td>';}).join('')+'</tr>'; }).join('')+'</tbody></table>';
+  }
+  function sug(lista){ return '<div class="chat-sug">'+lista.map(function(s){ return '<button type="button" data-q="'+esc(s)+'">'+esc(s)+'</button>'; }).join('')+'</div>'; }
+  function agrupar(arr, key){ var g = {}; arr.forEach(function(r){ var k = r[key]; if(k) (g[k] = g[k] || []).push(r); }); return g; }
+
+  /* ---------- meses y semanas ---------- */
+  var MES_NOM = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Setiembre','Octubre','Noviembre','Diciembre'];
+  var MESES_N = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,setiembre:9,septiembre:9,octubre:10,noviembre:11,diciembre:12};
+  function mesDe(f){ return f ? String(f).slice(0,7) : null; }
+  function labelMes(k){ if(!k) return '–'; var p = k.split('-'); return MES_NOM[+p[1]-1]+' '+p[0]; }
+  function semanaDe(f){ return f ? 'Sem '+Math.ceil(parseInt(String(f).slice(8,10),10)/7) : null; }
+  function meses(arr, campo){ var s = {}; arr.forEach(function(r){ var m = mesDe(r[campo]); if(m) s[m] = 1; }); return Object.keys(s).sort(); }
+  var MESES_ADH = meses(RECORDS, 'fecha'), MESES_EPA = meses(EPA_RECORDS, 'fechaAtencion');
+  var MES_DEF = MESES_ADH[MESES_ADH.length-1], MES_DEF_EPA = MESES_EPA[MESES_EPA.length-1];
+  function prevMes(k, lista){ var i = (lista||MESES_ADH).indexOf(k); return i>0 ? (lista||MESES_ADH)[i-1] : null; }
+  function detectarMeses(q){
+    var nq = norm(q), anio = (nq.match(/20\d\d/)||[])[0], todos = MESES_ADH.concat(MESES_EPA), out = {};
+    Object.keys(MESES_N).forEach(function(nom){
+      if(nq.indexOf(nom)<0) return;
+      var c = todos.filter(function(k){ return +k.split('-')[1]===MESES_N[nom] && (!anio || k.indexOf(anio)===0); }).sort();
+      if(c.length) out[c[c.length-1]] = 1;
+    });
+    return Object.keys(out).sort();
+  }
+  function detectarMes(q){
+    if(/mes (pasado|anterior)/.test(norm(q))) return prevMes(MES_DEF) || MES_DEF;
+    var m = detectarMeses(q); return m.length ? m[m.length-1] : null;
+  }
+  function detectarSemana(q){ var m = norm(q).match(/semana\s*([1-5])|\bsem\s*([1-5])\b/); return m ? 'Sem '+(m[1]||m[2]) : ''; }
+
+  /* ---------- datos base (mismos criterios que las pestañas) ---------- */
+  // Dashboard A365: por defecto excluye "No Care", igual que el filtro de Campaña
+  function monit(mk, sem){ return RECORDS.filter(function(r){ return mesDe(r.fecha)===mk && r.mundo!=='No Care' && (!sem || semanaDe(r.fecha)===sem); }); }
+  function ofrec(mk, sem){ return OFREC_RECORDS.filter(function(r){ return mesDe(r.fecha)===mk && (!sem || semanaDe(r.fecha)===sem); }); }
+  function epa(mk, sem){ return EPA_RECORDS.filter(function(r){ return mesDe(r.fechaAtencion)===mk && (!sem || semanaDe(r.fechaAtencion)===sem); }); }
+  function vas(mk){ return VAS_A365_RECORDS.filter(function(r){ return mesDe(r.fecha)===mk; }); }
+  function kpisMonit(rows){ return {q:rows.length, rf:prom(rows,'resultadoFinal'), pec:prom(rows,'pec'), adh:prom(rows,'adherencia'), tip:prom(rows,'tipifGeneral'), penc:prom(rows,'penc')}; }
+  function kpisOfrec(rows){
+    var na = rows.filter(function(r){return r.sumale==='N/A';}).length, ab = rows.filter(function(r){return r.sumale==='SI'||r.sumale==='NO';}).length;
+    return {q:rows.length, noAb: rows.length ? na/rows.length*100 : null, ab: rows.length ? ab/rows.length*100 : null, ofr: prom(rows,'ofrecimientoPct')};
+  }
+  function kpisEpa(rows){
+    var m = rows.filter(function(r){return isNum(r.metaPlataforma);});
+    return {q:rows.length, epa:prom(rows,'epa'), meta: m.length ? prom(m,'metaPlataforma') : null, emp:prom(rows,'empatia'), esf:prom(rows,'esfuerzo2'), res:prom(rows,'resolucion'),
+            insat: rows.filter(function(r){return r.insat==='INSATISFECHO';}).length};
+  }
+  function porPersona(rows, campo){
+    var g = agrupar(rows, campo);
+    return Object.keys(g).map(function(n){ var k = kpisMonit(g[n]); k.nombre = n; k.jefe = g[n][0].jefe; return k; });
+  }
+  function pareto(rows){
+    return PARETO_META.map(function(m,i){
+      var ev = 0, si = 0;
+      rows.forEach(function(r){ var v = r.errItems ? r.errItems[i] : null; if(v===true||v===false){ ev++; if(v) si++; } });
+      return {item:m.item, bloque:m.bloque, si:si, pct: ev ? si/ev*100 : null};
+    }).filter(function(x){return x.si>0;}).sort(function(a,b){return b.si-a.si;});
+  }
+
+  /* ---------- personas (asesores y supervisores de las dos bases) ---------- */
+  var STOP = {de:1,del:1,la:1,las:1,los:1,el:1,y:1,mes:1,que:1,por:1,con:1,para:1,como:1,cual:1,semana:1,equipo:1};
+  var PERSONAS = {};
+  RECORDS.concat(OFREC_RECORDS).forEach(function(r){ if(r.nombre && !PERSONAS[r.nombre]) PERSONAS[r.nombre] = 'ase'; });
+  EPA_RECORDS.forEach(function(r){ if(r.asesor && !PERSONAS[r.asesor]) PERSONAS[r.asesor] = 'ase'; });
+  RECORDS.forEach(function(r){ if(r.jefe) PERSONAS[r.jefe] = 'sup'; });
+  EPA_RECORDS.forEach(function(r){ if(r.supervisor) PERSONAS[r.supervisor] = 'sup'; });
+  var NOMBRES = Object.keys(PERSONAS).map(function(n){
+    return {nombre:n, tipo:PERSONAS[n], tokens:norm(n).split(/\s+/).filter(function(t){return t.length>=3 && !STOP[t];})};
+  });
+  function buscarPersona(q){
+    var qt = {}; norm(q).split(/[^a-z0-9]+/).forEach(function(t){ if(t) qt[t] = 1; });
+    var mejores = [], max = 0;
+    NOMBRES.forEach(function(p){
+      var s = p.tokens.filter(function(t){return qt[t];}).length;
+      if(s>max){ max = s; mejores = [p]; } else if(s && s===max) mejores.push(p);
+    });
+    return max ? mejores : [];
+  }
+
+  /* ---------- respuestas ---------- */
+  function rResumen(mk, sem){
+    var k = kpisMonit(monit(mk, sem)), p = sem ? null : prevMes(mk), kp = p ? kpisMonit(monit(p)) : null;
+    if(!k.q) return 'No hay monitoreos en '+labelMes(mk)+(sem?' · '+sem:'')+'.';
+    var o = kpisOfrec(ofrec(mk, sem)), em = MESES_EPA.indexOf(mk)>=0 ? mk : MES_DEF_EPA, e = kpisEpa(epa(em, em===mk ? sem : ''));
+    return '<b>Resumen · '+labelMes(mk)+(sem?' · '+sem:'')+'</b>'+
+      '<ul><li>Monitoreos: <b>'+k.q+'</b> · Resultado Final <b>'+n1(k.rf)+'</b>'+(kp?delta(k.rf,kp.rf,' pts'):'')+'</li>'+
+      '<li>PEC <b>'+p0(k.pec)+'</b>'+(kp?delta(k.pec,kp.pec):'')+' · Adherencia <b>'+p0(k.adh)+'</b>'+(kp?delta(k.adh,kp.adh):'')+' · Tipificación '+p0(k.tip)+'</li>'+
+      (o.q?'<li>Ofrecimiento (S2S): '+o.q+' casos · Abordable '+p0(o.ab)+' · % Ofrecimiento <b>'+p0(o.ofr)+'</b></li>':'')+
+      (e.q?'<li>EPA'+(em!==mk?' ('+labelMes(em)+')':'')+': <b>'+n0(e.epa)+'</b> vs meta '+n0(e.meta)+' · '+e.q+' encuestas · '+e.insat+' insatisfechos</li>':'')+'</ul>'+
+      (kp?'<div class="muted">Comparado con '+labelMes(p)+'. Monitoreos sin "No Care", como el filtro por defecto.</div>':'')+
+      sug(['Top 5', 'Errores más frecuentes', 'Ofrecimiento', 'EPA']);
+  }
+
+  function rRanking(mk, mejores, sup){
+    var lista = porPersona(monit(mk).filter(function(r){ return !sup || r.jefe===sup; }), 'nombre');
+    lista.sort(function(a,b){ return mejores ? (b.rf||0)-(a.rf||0) : (a.rf||0)-(b.rf||0); });
+    var top = lista.slice(0,5);
+    if(!top.length) return 'No hay asesores con monitoreos en '+labelMes(mk)+'.';
+    return '<b>'+(mejores?'Mejor':'Menor')+' Resultado Final · '+labelMes(mk)+(sup?' · equipo de '+titulo(sup):'')+'</b>'+
+      tabla(['Asesor','Q','Result.','PEC','Adh.'], top.map(function(e){ return [esc(titulo(e.nombre)), e.q, n1(e.rf), p0(e.pec), p0(e.adh)]; }))+
+      '<div class="muted">Q = monitoreos del mes. Con Q de 1 o 2 la posición es poco representativa.</div>'+
+      sug([mejores?'Asesores con menor resultado':'Mejores asesores', '¿Cómo le fue a '+titulo(top[0].nombre).split(' ')[0]+'?']);
+  }
+
+  function rErrores(mk, sem, sup){
+    var rows = monit(mk, sem).filter(function(r){ return !sup || r.jefe===sup; }), top = pareto(rows).slice(0,7);
+    if(!top.length) return 'No hay errores registrados en '+labelMes(mk)+(sem?' · '+sem:'')+'.';
+    return '<b>Errores más frecuentes · '+labelMes(mk)+(sem?' · '+sem:'')+(sup?' · equipo de '+titulo(sup):'')+'</b>'+
+      tabla(['Ítem','Bloque','Casos','% error'], top.map(function(x){ return [esc(x.item), x.bloque, x.si, p0(x.pct)]; }))+
+      '<div class="muted">De '+rows.length+' monitoreos. % = monitoreos evaluados en ese ítem que tuvieron el error.</div>';
+  }
+
+  function rOfrec(mk, sem, filtro, etiqueta){
+    var rows = ofrec(mk, sem).filter(function(r){ return !filtro || filtro(r); }), k = kpisOfrec(rows);
+    if(!k.q) return 'No hay casos de Ofrecimiento (S2S) en '+labelMes(mk)+(sem?' · '+sem:'')+(etiqueta?' para '+etiqueta:'')+'.';
+    var p = sem ? null : prevMes(mk), kp = p ? kpisOfrec(ofrec(p).filter(function(r){ return !filtro || filtro(r); })) : null;
+    var g = agrupar(rows, 'plataforma'), mot = agrupar(rows.filter(function(r){return r.motivoNoVenta;}), 'motivoNoVenta');
+    var motivos = Object.keys(mot).sort(function(a,b){return mot[b].length-mot[a].length;});
+    return '<b>Ofrecimiento · '+labelMes(mk)+(sem?' · '+sem:'')+(etiqueta?' · '+esc(etiqueta):'')+'</b>'+
+      '<ul><li>Casos auditados: <b>'+k.q+'</b> · No abordable '+p0(k.noAb)+' · Abordable '+p0(k.ab)+'</li>'+
+      '<li>% Ofrecimiento: <b>'+p0(k.ofr)+'</b>'+(kp?delta(k.ofr,kp.ofr):'')+'</li></ul>'+
+      tabla(['Plataforma','Casos','Abord.','% Ofrec.'], Object.keys(g).sort().map(function(pl){ var x = kpisOfrec(g[pl]); return [esc(pl), x.q, p0(x.ab), p0(x.ofr)]; }))+
+      (motivos.length?'<div class="muted">Motivo de no venta: '+motivos.map(function(m){return esc(m)+' ('+mot[m].length+')';}).join(' · ')+'</div>':'')+
+      (kp?'<div class="muted">Comparado con '+labelMes(p)+'.</div>':'');
+  }
+
+  function rEpa(mk, sem, filtro, etiqueta){
+    var rows = epa(mk, sem).filter(function(r){ return !filtro || filtro(r); }), k = kpisEpa(rows);
+    if(!k.q) return 'No hay encuestas EPA en '+labelMes(mk)+(sem?' · '+sem:'')+(etiqueta?' para '+etiqueta:'')+'.';
+    var p = sem ? null : prevMes(mk, MESES_EPA), kp = p ? kpisEpa(epa(p).filter(function(r){ return !filtro || filtro(r); })) : null;
+    var g = agrupar(rows, 'plataformaOk');
+    return '<b>EPA · '+labelMes(mk)+(sem?' · '+sem:'')+(etiqueta?' · '+esc(etiqueta):'')+'</b>'+
+      '<ul><li>Encuestas: <b>'+k.q+'</b> · EPA <b>'+n0(k.epa)+'</b>'+(kp?delta(k.epa,kp.epa,' pts'):'')+' vs meta '+n0(k.meta)+'</li>'+
+      '<li>Actitud '+n0(k.emp)+' · Esfuerzo '+n0(k.esf)+' · Resolución '+n0(k.res)+' · Insatisfechos: '+k.insat+'</li></ul>'+
+      (filtro?'':tabla(['Plataforma','Encuestas','EPA','Meta'], Object.keys(g).sort().map(function(pl){ var x = kpisEpa(g[pl]); return [esc(pl), x.q, n0(x.epa), n0(x.meta)]; })))+
+      (kp?'<div class="muted">Comparado con '+labelMes(p)+'.</div>':'')+
+      (filtro?'':sug(['Asesores con menor EPA', 'Mejores asesores en EPA']));
+  }
+
+  function rEpaRanking(mk, mejores){
+    var g = agrupar(epa(mk), 'asesor');
+    var lista = Object.keys(g).filter(function(n){return g[n].length>=3;}).map(function(n){ var k = kpisEpa(g[n]); k.nombre = n; return k; });
+    lista.sort(function(a,b){ return mejores ? (b.epa||0)-(a.epa||0) : (a.epa||0)-(b.epa||0); });
+    if(!lista.length) return 'No hay asesores con 3 o más encuestas en '+labelMes(mk)+'.';
+    return '<b>'+(mejores?'Mejor':'Menor')+' EPA por asesor · '+labelMes(mk)+'</b>'+
+      tabla(['Asesor','Encuestas','EPA','Insat.'], lista.slice(0,5).map(function(e){ return [esc(titulo(e.nombre)), e.q, n0(e.epa), e.insat]; }))+
+      '<div class="muted">Solo asesores con 3 o más encuestas en el mes.</div>';
+  }
+
+  function rVas(mk){
+    var rows = vas(mk), adh = promBool(rows, 'adherencia');
+    if(!rows.length) return 'No hay casos VAS Premium en '+labelMes(mk)+'.';
+    return '<b>VAS Premium · '+labelMes(mk)+'</b><ul><li>Casos: <b>'+rows.length+'</b> · Adherencia <b>'+p0(adh)+'</b> vs meta 85%'+
+      (isNum(adh)?' (brecha '+(adh-85>=0?'+':'')+Math.round(adh-85)+' pp)':'')+'</li></ul>';
+  }
+
+  function rEvolucion(){
+    var filas = MESES_ADH.slice(-6).map(function(m){
+      var k = kpisMonit(monit(m)), o = kpisOfrec(ofrec(m)), e = kpisEpa(epa(m));
+      return [labelMes(m), k.q, n1(k.rf), p0(k.pec), p0(k.adh), o.q ? p0(o.ofr) : '–', e.q ? n0(e.epa) : '–'];
+    });
+    return '<b>Evolución mensual</b>'+tabla(['Mes','Q','Result.','PEC','Adh.','% Ofrec.','EPA'], filas)+
+      '<div class="muted">Últimos '+filas.length+' meses con monitoreos.</div>';
+  }
+
+  function rSemanas(mk){
+    var g = agrupar(monit(mk).map(function(r){ return {s:semanaDe(r.fecha), r:r}; }), 's'), sems = Object.keys(g).sort();
+    if(!sems.length) return 'No hay monitoreos en '+labelMes(mk)+'.';
+    return '<b>Por semana · '+labelMes(mk)+'</b>'+tabla(['Semana','Q','Result.','PEC','Adh.','EPA'], sems.map(function(s){
+      var k = kpisMonit(g[s].map(function(x){return x.r;})), e = kpisEpa(epa(mk, s));
+      return [s, k.q, n1(k.rf), p0(k.pec), p0(k.adh), e.q ? n0(e.epa) : '–'];
+    }))+'<div class="muted">Sem 1 = días 1-7, Sem 2 = 8-14, etc.</div>';
+  }
+
+  function rCuartiles(mk){
+    var lista = porPersona(monit(mk), 'nombre').filter(function(e){return isNum(e.rf);}).sort(function(a,b){return b.rf-a.rf;}), n = lista.length;
+    if(!n) return 'No hay asesores con monitoreos en '+labelMes(mk)+'.';
+    var c = {Q1:[],Q2:[],Q3:[],Q4:[]};
+    lista.forEach(function(e,i){ var p = n>1 ? i/(n-1) : 0; c[p<=0.25?'Q1':p<=0.5?'Q2':p<=0.75?'Q3':'Q4'].push(e); });
+    return '<b>Cuartiles por Resultado Final · '+labelMes(mk)+'</b> ('+n+' asesores)'+
+      '<ul><li>Q1 (mejor 25%): '+c.Q1.length+'</li><li>Q2: '+c.Q2.length+'</li><li>Q3: '+c.Q3.length+'</li><li>Q4 (menor 25%): '+c.Q4.length+'</li></ul>'+
+      (c.Q4.length?'<div class="muted">En Q4: '+esc(c.Q4.map(function(e){return titulo(e.nombre);}).join(', '))+'.</div>':'')+
+      '<div class="muted">Calculado sobre el mes; la pestaña Dashboard A365 usa todo el periodo cargado.</div>';
+  }
+
+  function rAsesor(nombre, mk, explicito){
+    var rows = monit(mk).filter(function(r){return r.nombre===nombre;});
+    if(!rows.length && !explicito){
+      for(var i=MESES_ADH.length-1; i>=0 && !rows.length; i--){ var k2 = MESES_ADH[i], r2 = monit(k2).filter(function(r){return r.nombre===nombre;}); if(r2.length){ rows = r2; mk = k2; } }
+    }
+    var o = ofrec(mk).filter(function(r){return r.nombre===nombre;}), e = epa(mk).filter(function(r){return r.asesor===nombre;});
+    if(!rows.length && !o.length && !e.length) return titulo(nombre)+' no tiene monitoreos ni encuestas en '+labelMes(mk)+'.';
+    var out = '<b>'+esc(titulo(nombre))+' · '+labelMes(mk)+'</b>', k = kpisMonit(rows);
+    if(rows.length){
+      var orden = porPersona(monit(mk), 'nombre').sort(function(a,b){return (b.rf||0)-(a.rf||0);});
+      var pos = orden.map(function(x){return x.nombre;}).indexOf(nombre)+1, p = prevMes(mk), kp = p ? kpisMonit(monit(p).filter(function(r){return r.nombre===nombre;})) : null;
+      var err = pareto(rows).slice(0,3), op = rows.filter(function(r){return r.oportunidades;}).sort(function(a,b){return a.fecha<b.fecha?1:-1;})[0];
+      out += '<div class="muted">Supervisor: '+esc(titulo(rows[0].jefe))+' · '+esc(rows[0].plataforma||'')+'</div>'+
+        '<ul><li>Resultado Final <b>'+n1(k.rf)+'</b>'+(kp&&kp.q?delta(k.rf,kp.rf,' pts'):'')+' · puesto '+pos+' de '+orden.length+'</li>'+
+        '<li>PEC '+p0(k.pec)+' · Adherencia '+p0(k.adh)+' · Tipificación '+p0(k.tip)+' · '+k.q+' monitoreos</li>'+
+        (err.length?'<li>Errores más repetidos: '+err.map(function(x){return esc(x.item)+' ('+x.si+')';}).join('; ')+'</li>':'');
+    } else out += '<ul><li>Sin monitoreos en el mes.</li>';
+    if(o.length){ var ko = kpisOfrec(o); out += '<li>Ofrecimiento: '+ko.q+' casos · % Ofrecimiento <b>'+p0(ko.ofr)+'</b></li>'; }
+    if(e.length){ var ke = kpisEpa(e); out += '<li>EPA: <b>'+n0(ke.epa)+'</b> en '+ke.q+' encuestas · '+ke.insat+' insatisfechos</li>'; }
+    out += '</ul>';
+    if(op) out += '<div class="muted"><b>Última oportunidad de mejora:</b> '+esc(String(op.oportunidades).slice(0,260))+(String(op.oportunidades).length>260?'…':'')+'</div>';
+    return out;
+  }
+
+  function rSupervisor(nombre, mk){
+    var rows = monit(mk).filter(function(r){return r.jefe===nombre;}), e = epa(mk).filter(function(r){return r.supervisor===nombre;});
+    if(!rows.length && !e.length) return 'El equipo de '+titulo(nombre)+' no tiene monitoreos ni encuestas en '+labelMes(mk)+'.';
+    var k = kpisMonit(rows), p = prevMes(mk), kp = p ? kpisMonit(monit(p).filter(function(r){return r.jefe===nombre;})) : null;
+    var eq = porPersona(rows, 'nombre').sort(function(a,b){return (b.rf||0)-(a.rf||0);}), o = kpisOfrec(ofrec(mk).filter(function(r){return r.jefe===nombre;})), ke = kpisEpa(e);
+    return '<b>Equipo de '+esc(titulo(nombre))+' · '+labelMes(mk)+'</b> ('+eq.length+' asesores, '+k.q+' monitoreos)'+
+      '<ul>'+(k.q?'<li>Resultado Final <b>'+n1(k.rf)+'</b>'+(kp&&kp.q?delta(k.rf,kp.rf,' pts'):'')+' · PEC '+p0(k.pec)+' · Adherencia '+p0(k.adh)+'</li>':'')+
+      (o.q?'<li>Ofrecimiento: '+o.q+' casos · % Ofrecimiento <b>'+p0(o.ofr)+'</b></li>':'')+
+      (ke.q?'<li>EPA: <b>'+n0(ke.epa)+'</b> en '+ke.q+' encuestas · '+ke.insat+' insatisfechos</li>':'')+'</ul>'+
+      (eq.length?'<div class="muted">Mejor: '+esc(titulo(eq[0].nombre))+' ('+n1(eq[0].rf)+') · Menor: '+esc(titulo(eq[eq.length-1].nombre))+' ('+n1(eq[eq.length-1].rf)+')</div>':'')+
+      sug(['Asesores con menor resultado del equipo de '+titulo(nombre).split(' ')[0], 'Errores del equipo de '+titulo(nombre).split(' ')[0]]);
+  }
+
+  function rAyuda(){
+    return 'Respondo con las bases de <b>Adherencias</b> (monitoreos, Ofrecimiento, VAS) y <b>Reporte EPA</b>. Prueba con:'+
+      '<ul><li>"Resumen de octubre" o "¿cómo vamos?"</li><li>"Top 5" / "menor resultado"</li>'+
+      '<li>"Errores más frecuentes semana 2"</li><li>"Ofrecimiento de setiembre"</li>'+
+      '<li>"EPA" / "asesores con menor EPA"</li><li>"VAS", "evolución", "por semana", "cuartiles"</li>'+
+      '<li>"¿Cómo le fue a Diego?" / "equipo de Luis"</li></ul>'+
+      '<div class="muted">Si no dices el mes, uso el último ('+labelMes(MES_DEF)+'). '+(CHAT_IA_URL ? 'Lo que no esté en esta lista (análisis, recomendaciones, "¿por qué…?") lo responde la IA.' : 'Funciona sin internet y sin enviar datos a nadie.')+'</div>'+
+      sug(['¿Cómo vamos?', 'Top 5', 'Errores más frecuentes', 'Ofrecimiento', 'EPA']);
+  }
+
+  /* ---------- interpretación de la pregunta ---------- */
+  var PIDE_ANALISIS = /por ?que|recomiend|sugier|analiz|explica|consejo|que hago|que hacer|como mejor|conclus|causa|interpret|feedback|retroaliment|plan de accion|prioriz/;
+  function responder(q){
+    var nq = norm(q), mesQ = detectarMes(q), sem = detectarSemana(q);
+    var pideEpa = /\bepa\b|encuesta|satisf|insat|ipsos/.test(nq), pideOfr = /ofrec|abord|sumale|no venta|venta/.test(nq), pideVas = /\bvas\b|premium/.test(nq);
+    var mk = mesQ || (pideEpa ? MES_DEF_EPA : MES_DEF);
+    if(/^(hola|ayuda|help|\?)|que (puedes|sabes)|como funciona/.test(nq.trim())) return rAyuda();
+    if(CHAT_IA_URL && PIDE_ANALISIS.test(nq)) return null;   // análisis abierto: lo responde la IA
+
+    var personas = buscarPersona(q), pideEquipo = /equipo|supervisor/.test(nq);
+    var pideRank = /(top|mejor|mayor|destac|peor|menor|bajo|baja|ultimo|ranking)/.test(nq), peores = /(peor|menor|bajo|baja|ultimo)/.test(nq);
+    var pideErr = /error|falla|pareto|hallazgo|oportunidad|item/.test(nq);
+    if(personas.length>1 && pideEquipo){ var sups = personas.filter(function(p){return p.tipo==='sup';}); if(sups.length===1) personas = sups; }
+    if(personas.length>1) return '¿A quién te refieres?'+sug(personas.slice(0,8).map(function(p){ return p.tipo==='sup' ? 'Equipo de '+titulo(p.nombre) : '¿Cómo le fue a '+titulo(p.nombre)+'?'; }));
+    if(personas.length===1){
+      var per = personas[0], campo = per.tipo==='sup' ? 'jefe' : 'nombre';
+      if(pideEpa) return rEpa(mk, sem, function(r){ return r[per.tipo==='sup'?'supervisor':'asesor']===per.nombre; }, (per.tipo==='sup'?'equipo de ':'')+titulo(per.nombre));
+      if(pideOfr) return rOfrec(mk, sem, function(r){ return r[campo]===per.nombre; }, (per.tipo==='sup'?'equipo de ':'')+titulo(per.nombre));
+      if(per.tipo==='sup'){
+        if(pideErr) return rErrores(mk, sem, per.nombre);
+        if(pideRank) return rRanking(mk, !peores, per.nombre);
+        return rSupervisor(per.nombre, mk);
+      }
+      return rAsesor(per.nombre, mk, !!mesQ);
+    }
+    if(pideEpa) return pideRank ? rEpaRanking(mk, !peores) : rEpa(mk, sem);
+    if(pideOfr) return rOfrec(mk, sem);
+    if(pideVas) return rVas(mk);
+    if(pideErr || /mejorar/.test(nq)) return rErrores(mk, sem);
+    if(/cuartil|q4|q1/.test(nq)) return rCuartiles(mk);
+    if(/evoluc|tendencia|historic|meses|mensual|compar/.test(nq)) return rEvolucion();
+    if(pideRank) return rRanking(mk, !peores);
+    if(/semana|semanal/.test(nq) && !sem) return rSemanas(mk);
+    if(/resumen|como vamos|kpi|general|resultado|adherencia|pec|tipific|indicador/.test(nq) || mesQ || sem) return rResumen(mk, sem);
+    return null;   // no reconocida
+  }
+
+  /* ---------- IA: datos que se envían y llamada al intermediario ---------- */
+  function contextoIA(q){
+    var mk = detectarMes(q) || ultimoMes || MES_DEF, mm = detectarMeses(q), p = mm.length>1 ? mm[mm.length-2] : prevMes(mk), L = [];
+    function linea(k){ return 'Q '+k.q+' | Resultado Final '+n1(k.rf)+' | PEC '+p1(k.pec)+' | Adherencia '+p1(k.adh)+' | Tipificación '+p1(k.tip)+' | PENC '+p1(k.penc); }
+    L.push('CÓMO ANALIZAR: para explicar una subida o bajada compara el MES ANALIZADO con el MES DE COMPARACIÓN (indicadores, errores del Pareto, supervisores, asesores, Ofrecimiento y EPA) y considera el tamaño de muestra (Q). Da conclusiones concretas con cifras de estos datos.', '');
+    L.push('MES ANALIZADO: '+labelMes(mk)+' (último mes con monitoreos: '+labelMes(MES_DEF)+'; último con EPA: '+labelMes(MES_DEF_EPA)+')');
+    L.push('MONITOREOS (base Adherencias, sin No Care): '+linea(kpisMonit(monit(mk))));
+    if(p) L.push('MES DE COMPARACIÓN '+labelMes(p)+': '+linea(kpisMonit(monit(p))));
+    L.push('', 'EVOLUCIÓN (mes | monitoreos | Resultado Final | PEC | Adherencia | % Ofrecimiento | encuestas EPA | EPA):');
+    MESES_ADH.forEach(function(m){ var k = kpisMonit(monit(m)), o = kpisOfrec(ofrec(m)), e = kpisEpa(epa(m)); L.push([labelMes(m), k.q, n1(k.rf), p1(k.pec), p1(k.adh), p1(o.ofr), e.q, n1(e.epa)].join(' | ')); });
+    L.push('', 'SUPERVISORES '+labelMes(mk)+' (nombre | monitoreos | Resultado Final | PEC | Adherencia):');
+    porPersona(monit(mk), 'jefe').forEach(function(s){ L.push([s.nombre, s.q, n1(s.rf), p1(s.pec), p1(s.adh)].join(' | ')); });
+    L.push('', 'ASESORES '+labelMes(mk)+' (nombre | supervisor | monitoreos | Resultado Final | PEC | Adherencia):');
+    porPersona(monit(mk), 'nombre').forEach(function(e){ L.push([e.nombre, e.jefe, e.q, n1(e.rf), p1(e.pec), p1(e.adh)].join(' | ')); });
+    L.push('', 'ERRORES MÁS FRECUENTES '+labelMes(mk)+' (ítem | bloque | casos | % con error):');
+    pareto(monit(mk)).slice(0,12).forEach(function(x){ L.push([x.item, x.bloque, x.si, p1(x.pct)].join(' | ')); });
+    if(p){ L.push('', 'ERRORES MÁS FRECUENTES '+labelMes(p)+':'); pareto(monit(p)).slice(0,8).forEach(function(x){ L.push([x.item, x.bloque, x.si, p1(x.pct)].join(' | ')); }); }
+    var o = kpisOfrec(ofrec(mk)), mot = agrupar(ofrec(mk).filter(function(r){return r.motivoNoVenta;}), 'motivoNoVenta');
+    L.push('', 'OFRECIMIENTO S2S '+labelMes(mk)+': casos '+o.q+' | No abordable '+p1(o.noAb)+' | Abordable '+p1(o.ab)+' | % Ofrecimiento '+p1(o.ofr)+
+      ' | motivos de no venta: '+Object.keys(mot).map(function(m){return m+' '+mot[m].length;}).join(', '));
+    var me = MESES_EPA.indexOf(mk)>=0 ? mk : MES_DEF_EPA, e = kpisEpa(epa(me)), ge = agrupar(epa(me), 'plataformaOk');
+    L.push('', 'EPA '+labelMes(me)+' (base Reporte EPA): encuestas '+e.q+' | EPA '+n1(e.epa)+' | meta ponderada '+n1(e.meta)+' | Actitud '+n1(e.emp)+' | Esfuerzo '+n1(e.esf)+' | Resolución '+n1(e.res)+' | insatisfechos '+e.insat);
+    Object.keys(ge).sort().forEach(function(pl){ var x = kpisEpa(ge[pl]); L.push('  '+pl+' | encuestas '+x.q+' | EPA '+n1(x.epa)+' | meta '+n1(x.meta)); });
+    var v = vas(mk); if(v.length) L.push('', 'VAS PREMIUM '+labelMes(mk)+': casos '+v.length+' | adherencia '+p1(promBool(v,'adherencia'))+' (meta 85%)');
+    // Evaluaciones de la persona mencionada (o de la última de la conversación)
+    var per = buscarPersona(q); per = per.length===1 ? per[0] : (per.length ? null : ultimaPersona);
+    if(per){
+      ultimaPersona = per;
+      var campo = per.tipo==='sup' ? 'jefe' : 'nombre';
+      function t(s){ return String(s||'-').replace(/\s+/g,' ').slice(0,250); }
+      L.push('', 'MONITOREOS DE '+per.nombre+' en '+labelMes(mk)+' (fecha | asesor | plataforma | motivo | Resultado Final | PEC | Adherencia | fortalezas | oportunidades):');
+      monit(mk).filter(function(x){return x[campo]===per.nombre;}).slice(0,10).forEach(function(x){
+        L.push([x.fecha, x.nombre, x.plataforma, x.motivo, n1(x.resultadoFinal), p1(x.pec), p1(x.adherencia), t(x.fortalezas), t(x.oportunidades)].join(' | '));
+      });
+      var cE = per.tipo==='sup' ? 'supervisor' : 'asesor';
+      L.push('', 'ENCUESTAS EPA INSATISFECHAS DE '+per.nombre+' en '+labelMes(me)+' (fecha | asesor | frente | submotivo | observación | puntos de mejora):');
+      epa(me).filter(function(x){return x[cE]===per.nombre && x.insat==='INSATISFECHO';}).slice(0,8).forEach(function(x){
+        L.push([x.fechaAtencion, x.asesor, x.frente, x.subMotivo, t(x.observacionFrente), t(x.puntosMejora)].join(' | '));
+      });
+    }
+    return L.join('\n');
+  }
+  function formatoIA(texto){ return esc(texto).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>'); }
+  function preguntarIA(q){
+    var div = document.createElement('div');
+    div.className = 'chat-msg bot';
+    div.innerHTML = '<span class="muted">Analizando con IA…</span>';
+    body.appendChild(div); body.scrollTop = body.scrollHeight;
+    var mk = detectarMes(q) || ultimoMes || MES_DEF;
+    fetch(CHAT_IA_URL, {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({pregunta:q, contexto:contextoIA(q), historial:historialIA.slice(-6)})})
+      .then(function(r){ return r.json().catch(function(){ return {error:'respuesta inválida ('+r.status+')'}; }); })
+      .then(function(res){
+        if(res.respuesta){
+          div.innerHTML = formatoIA(res.respuesta)+'<div class="muted" style="margin-top:6px;">🤖 Respuesta generada por IA con los datos de '+labelMes(mk)+'. Verifica las cifras importantes en el dashboard.</div>';
+          historialIA.push({role:'user', content:q}, {role:'assistant', content:res.respuesta});
+        } else { div.innerHTML = 'La IA no pudo responder: '+esc(res.error||'error')+'. '+rAyuda(); activarSug(div); }
+        body.scrollTop = body.scrollHeight;
+      })
+      .catch(function(){ div.innerHTML = 'No pude conectarme con la IA (¿sin internet?). '+rAyuda(); activarSug(div); });
+  }
+
+  /* ---------- interfaz ---------- */
+  var body = $('chat-body');
+  function activarSug(div){ div.querySelectorAll('.chat-sug button').forEach(function(b){ b.addEventListener('click', function(){ preguntar(b.dataset.q); }); }); }
+  function agregar(html, quien){
+    var div = document.createElement('div');
+    div.className = 'chat-msg '+quien; div.innerHTML = html;
+    body.appendChild(div); activarSug(div); body.scrollTop = body.scrollHeight;
+  }
+  function preguntar(q){
+    q = String(q||'').trim();
+    if(!q) return;
+    agregar(esc(q), 'user');
+    if(detectarMes(q)) ultimoMes = detectarMes(q);
+    var r;
+    try{ r = responder(q); }catch(err){ r = 'No pude calcular esa respuesta.'; }
+    if(r===null){
+      if(CHAT_IA_URL) return preguntarIA(q);
+      r = 'No entendí la pregunta. '+rAyuda();
+    }
+    var p = buscarPersona(q); if(p.length===1) ultimaPersona = p[0];
+    agregar(r, 'bot');
+    var tmp = document.createElement('div'); tmp.innerHTML = r;
+    historialIA.push({role:'user', content:q}, {role:'assistant', content:tmp.innerText.slice(0,1200)});
+  }
+  $('chat-fab').addEventListener('click', function(){
+    $('chat-panel').classList.remove('hidden'); $('chat-fab').style.display = 'none';
+    if(!body.children.length) agregar('Hola 👋 '+rAyuda(), 'bot');
+    $('chat-text').focus();
+  });
+  $('chat-close').addEventListener('click', function(){ $('chat-panel').classList.add('hidden'); $('chat-fab').style.display = ''; });
+  $('chat-form').addEventListener('submit', function(e){ e.preventDefault(); var t = $('chat-text'); preguntar(t.value); t.value = ''; });
+})();
 </script>
 </body>
 </html>
