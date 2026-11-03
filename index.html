@@ -136,9 +136,14 @@
   .kpi-card-sm .kpi-label{font-size:9.5px;}
   .kpi-card-sm .kpi-delta{font-size:10px;}
   .kpi-delta .arrow{font-weight:800;font-size:12px;}
-  .kpi-delta .kpi-ase{flex-basis:100%;color:var(--text-dim);cursor:pointer;}
+  .kpi-delta .kpi-ase{flex-basis:100%;color:var(--text-dim);cursor:pointer;margin-top:4px;}
   .kpi-delta .kpi-ase b{color:var(--blue);}
-  .kpi-delta .kpi-ase:hover{text-decoration:underline;}
+  .kpi-delta .kpi-ase:hover .ase-txt{text-decoration:underline;}
+  .kpi-ase .ase-top{display:flex;justify-content:space-between;align-items:baseline;gap:6px;}
+  .kpi-ase .ase-pct{font-weight:800;font-size:13px;}
+  .kpi-ase .ase-bar{height:7px;border-radius:4px;background:var(--border-soft,#edf1f7);overflow:hidden;margin:4px 0 2px;}
+  .kpi-ase .ase-bar>div{height:100%;border-radius:4px;}
+  .kpi-ase .ase-falta{font-size:10.5px;color:var(--text-mute);}
   .ase-tbl{width:100%;border-collapse:collapse;font-size:12px;}
   .ase-tbl th{font-size:10px;font-weight:800;text-transform:uppercase;color:var(--text-mute);text-align:left;padding:5px 6px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;}
   .ase-tbl td{padding:5px 6px;border-bottom:1px solid var(--border-soft);}
@@ -2527,9 +2532,15 @@ function mesEnCurso(registros, campoFecha){
       && !evaluados.has(normAse(p.n)))
       .sort((a,b)=> (a.j||'').localeCompare(b.j||'','es') || a.n.localeCompare(b.n,'es'));
     const total = evaluados.size + asesoresSinEvaluar.length;
+    // avance hacia el objetivo: evaluar a todos los asesores activos
+    const pctAse = total ? evaluados.size / total * 100 : 0;
+    const colAse = pctAse >= 100 ? 'var(--green)' : pctAse >= 70 ? 'var(--amber)' : 'var(--red)';
     el.innerHTML = '<span>registros en el filtro actual</span>'+
-      '<span class="kpi-ase" title="Activos = ejecutivos de la dotación de Inbound que trabajaron algún día del periodo, más cualquier otro asesor evaluado. Clic para ver quiénes faltan.">'+
-      '<b>'+evaluados.size+'</b> de <b>'+total+'</b> asesores activos evaluados'+(asesoresSinEvaluar.length ? ' ›' : '')+'</span>';
+      '<div class="kpi-ase" title="Activos = ejecutivos de la dotación de Inbound que trabajaron algún día del periodo, más cualquier otro asesor evaluado. Clic para ver quiénes faltan.">'+
+      '<div class="ase-top"><span class="ase-txt"><b>'+evaluados.size+'</b> de <b>'+total+'</b> asesores activos evaluados</span>'+
+      '<span class="ase-pct" style="color:'+colAse+'">'+Math.round(pctAse)+'%</span></div>'+
+      '<div class="ase-bar"><div style="width:'+Math.min(100,pctAse).toFixed(1)+'%;background:'+colAse+'"></div></div>'+
+      '<div class="ase-falta">'+(asesoresSinEvaluar.length ? 'Faltan <b>'+asesoresSinEvaluar.length+'</b> por evaluar ›' : '✓ Todos los activos evaluados')+'</div></div>';
     const ase = el.querySelector('.kpi-ase');
     if(asesoresSinEvaluar.length) ase.addEventListener('click', openSinEvaluarPopup);
   }
