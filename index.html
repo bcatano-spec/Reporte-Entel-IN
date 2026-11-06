@@ -693,7 +693,7 @@
       <div class="update-badge">
         <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 3v3M16 3v3"/></svg></div>
         <div>
-          <div class="lbl">Periodo analizado</div>
+          <div class="lbl">Última actualización</div>
           <div class="val" id="vasPeriodo">–</div>
         </div>
       </div>
@@ -3232,6 +3232,8 @@ function mesEnCurso(registros, campoFecha){
   const MES_DEFECTO_VAS = mesEnCurso(VAS_A365_RECORDS, 'fecha');
   selMes.value = MES_DEFECTO_VAS; // por defecto: mes en curso
   fillSelect(selSemana, uniqueSorted(VAS_A365_RECORDS.map(r=>r.semana)).sort((a,b)=>a.localeCompare(b,'es',{numeric:true})), 'Todas');
+  // Caja del caso = Plataforma de la base de Adherencias (Excel)
+  VAS_A365_RECORDS.forEach(r=>{ if(r.plataforma) r.cajaDelCaso = r.plataforma; });
   fillSelect(selCaja, uniqueSorted(VAS_A365_RECORDS.map(r=>r.cajaDelCaso)), 'Todas');
   fillSelect(selSupervisor, uniqueSorted(VAS_A365_RECORDS.map(r=>r.jefe)), 'Todos');
   fillSelect(selAsesor, uniqueSorted(VAS_A365_RECORDS.map(r=>r.nombre)), 'Todos');
@@ -3241,9 +3243,9 @@ function mesEnCurso(registros, campoFecha){
   if(fechas.length){
     const MESES = {'01':'Ene','02':'Feb','03':'Mar','04':'Abr','05':'May','06':'Jun','07':'Jul','08':'Ago','09':'Sep','10':'Oct','11':'Nov','12':'Dic'};
     function fmtFecha(f){ const [y,m,d]=f.split('-'); return `${d} ${MESES[m]}`; }
-    document.getElementById('vasPeriodo').textContent = fechas.length>1
-      ? `${fmtFecha(fechas[0])} – ${fmtFecha(fechas[fechas.length-1])} ${fechas[fechas.length-1].split('-')[0]}`
-      : `${fmtFecha(fechas[0])} ${fechas[0].split('-')[0]}`;
+    // Solo la última fecha con datos (última actualización)
+    const ultimaVas = fechas[fechas.length-1];
+    document.getElementById('vasPeriodo').textContent = `${fmtFecha(ultimaVas)} ${ultimaVas.split('-')[0]}`;
   }
 
   function applyVasFilters(){
