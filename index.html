@@ -474,6 +474,35 @@
   .ofc .mas button{background:var(--bg-soft);border:1px solid var(--border);border-radius:8px;padding:7px 16px;font-size:12.5px;font-weight:700;color:var(--text-dim);cursor:pointer;font-family:inherit}
   .ofc .ins{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   .ofc .ins ul{margin:0;padding-left:18px} .ofc .ins li{margin:7px 0;font-size:13px;line-height:1.45}
+  .ofc .hz-res{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .ofc .hz-res span{font-size:12px;font-weight:700;padding:4px 10px;border-radius:12px}
+  .ofc .hz-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .ofc .hz{border:1px solid var(--line);border-left:4px solid var(--muted);border-radius:10px;padding:12px 14px;background:#fff;display:flex;flex-direction:column;gap:6px}
+  .ofc .hz.critico{border-left-color:#D92D20;background:#FFFBFA} .ofc .hz.vigilar{border-left-color:#F79009;background:#FFFCF5} .ofc .hz.fortaleza{border-left-color:#12B76A;background:#F6FEF9}
+  .ofc .hz .hz-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .ofc .hz .hz-tipo{font-size:10.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase}
+  .ofc .hz.critico .hz-tipo{color:#B42318} .ofc .hz.vigilar .hz-tipo{color:#B54708} .ofc .hz.fortaleza .hz-tipo{color:#05603A}
+  .ofc .hz .hz-met{font-size:20px;font-weight:800;color:var(--navy);white-space:nowrap}
+  .ofc .hz .hz-tit{font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.35}
+  .ofc .hz .hz-det{font-size:12px;color:#475467;line-height:1.45}
+  .ofc .hz .hz-ver{align-self:flex-start;margin-top:auto;background:none;border:1px solid var(--line);border-radius:7px;padding:4px 10px;font-size:11.5px;font-weight:700;color:var(--navy2);cursor:pointer;font-family:inherit}
+  .ofc .hz .hz-ver:hover{background:var(--soft)}
+  .ofc .plan-head{display:flex;justify-content:space-between;align-items:center;margin:20px 0 8px}
+  .ofc .plan-head h3{font-size:13px;color:var(--text-dim);margin:0;text-transform:uppercase;letter-spacing:.4px}
+  .ofc .plan-copy{background:var(--bg-soft);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;color:var(--text-dim);cursor:pointer;font-family:inherit}
+  .ofc .plan-copy:hover{background:var(--blue-soft);color:var(--blue)}
+  .ofc .plan-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+  .ofc table.plan{font-size:12.5px;min-width:820px}
+  .ofc table.plan th{background:#F2F4F7;color:#344054;font-size:11px;text-transform:uppercase;letter-spacing:.3px;padding:8px 10px;text-align:left;font-weight:700}
+  .ofc table.plan td{padding:10px;border-top:1px solid var(--line);vertical-align:top;text-align:left;line-height:1.4;white-space:normal}
+  .ofc table.plan td:nth-child(2){min-width:240px;width:32%}
+  .ofc table.plan td:nth-child(3){min-width:200px}
+  .ofc table.plan td:nth-child(4),.ofc table.plan td:nth-child(6){min-width:140px}
+  .ofc .prio{display:inline-block;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:8px;white-space:nowrap}
+  .ofc .prio.alta{background:#FEE4E2;color:#B42318} .ofc .prio.media{background:#FEF0C7;color:#B54708}
+  .ofc .who-chip{display:inline-block;font-size:11px;font-weight:600;background:#F2F4F7;color:#344054;border-radius:8px;padding:2px 7px;margin:0 4px 4px 0;white-space:nowrap}
+  .ofc .meta-v{font-weight:800;color:var(--navy);white-space:nowrap}
+  .ofc .meta-s{font-size:11px;color:var(--text-dim)}
   .ofc .concl{background:var(--navy);color:#fff;border-radius:12px;padding:14px 18px;margin-top:16px;font-size:13.5px;line-height:1.5}
   .ofc .concl b{color:#FFB37A}
   .ofc .vacio{padding:40px;text-align:center;color:var(--text-dim);font-size:14px}
@@ -487,6 +516,8 @@
   .ofc-modal .it{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px solid #E4E7EC}
   .ofc-modal .item{border:1px solid #E4E7EC;border-radius:8px;padding:10px;margin-top:10px;cursor:pointer}
   .ofc-modal .item:hover{background:#F8FAFC}
+  @media(max-width:1180px){.ofc .hz-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:640px){.ofc .hz-grid{grid-template-columns:1fr}}
   @media(max-width:1180px){.ofc .kpis.ofc-kpis{grid-template-columns:repeat(3,1fr)}.ofc .ofc-g2,.ofc .ofc-g2b,.ofc .ins,.ofc .mot{grid-template-columns:1fr}.ofc .calls{grid-template-columns:1fr 1fr}.ofc .pat{grid-template-columns:1fr 1fr}}
   @media(max-width:640px){.ofc .kpis.ofc-kpis{grid-template-columns:1fr 1fr}.ofc .calls,.ofc .pat{grid-template-columns:1fr}.ofc .row{grid-template-columns:110px 1fr 50px}.ofc .ofc-fecha{flex-wrap:wrap}.ofc-modal .mgrid{grid-template-columns:1fr}}
 </style>
@@ -1308,11 +1339,11 @@
 
     <div class="panel" id="ofc-sec-hallazgos">
       <h2><span class="bar"></span>Hallazgos y plan de acción</h2>
-      <div class="desc">Generados automáticamente con los monitoreos del filtro.</div>
-      <div class="ins">
-        <div><h3 style="font-size:13px;color:var(--text-dim);margin:6px 0">HALLAZGOS</h3><ul id="ofc-hall"></ul></div>
-        <div><h3 style="font-size:13px;color:var(--text-dim);margin:6px 0">ACCIONES SUGERIDAS</h3><ul id="ofc-acc"></ul></div>
-      </div>
+      <div class="desc">Generados automáticamente con los monitoreos del filtro. Cada hallazgo muestra las llamadas que lo explican y el plan dice a quién va dirigida cada acción, quién la lidera y qué meta tiene.</div>
+      <div class="hz-res" id="ofc-hzRes"></div>
+      <div class="hz-grid" id="ofc-hall"></div>
+      <div class="plan-head"><h3>Plan de acción</h3><button type="button" class="plan-copy" id="ofc-copiar">Copiar plan</button></div>
+      <div class="plan-wrap"><table class="plan" id="ofc-acc"></table></div>
       <div class="concl" id="ofc-concl"></div>
     </div>
     </div>
@@ -6371,7 +6402,7 @@ function mesEnCurso(registros, campoFecha){
     $('ofc-fsrc').textContent = `${DATA.length} monitoreos en total · ${dmy(fechas[0])} – ${dmy(fechas[fechas.length-1])}`;
     if(!n){
       $('ofc-sec-kpis').innerHTML = `<div class="kpi-card" style="grid-column:1/-1"><div class="vacio">No hay monitoreos con los filtros elegidos.</div></div>`;
-      ['ofc-chart','ofc-lgEvo','ofc-pEvo','ofc-est','ofc-hab','ofc-heat','ofc-rank','ofc-evo','ofc-pat','ofc-motReg','ofc-motReal','ofc-calls','ofc-mas','ofc-hall','ofc-acc','ofc-concl','ofc-nEst','ofc-nHab','ofc-pEst','ofc-pHab'].forEach(id=>{ if($(id)) $(id).innerHTML=""; });
+      ['ofc-chart','ofc-lgEvo','ofc-pEvo','ofc-est','ofc-hab','ofc-heat','ofc-rank','ofc-evo','ofc-pat','ofc-motReg','ofc-motReal','ofc-calls','ofc-mas','ofc-hzRes','ofc-hall','ofc-acc','ofc-concl','ofc-nEst','ofc-nHab','ofc-pEst','ofc-pHab'].forEach(id=>{ if($(id)) $(id).innerHTML=""; });
       return;
     }
     const pE = R.reduce((s,r)=>s+pts(r.est),0), pH = R.reduce((s,r)=>s+pts(r.hab),0);
@@ -6458,31 +6489,111 @@ function mesEnCurso(registros, campoFecha){
     if($('ofc-vermas')) $('ofc-vermas').onclick = ()=>{ verTodas=!verTodas; render(); };
     $('ofc-calls').querySelectorAll(".call").forEach(el=>el.onclick=()=>detail(+el.dataset.id));
 
-    // hallazgos y acciones (reglas)
-    const H = [], A = [];
-    H.push(`<b>${ventas} de ${n} ventas concretadas (${Math.round(ventas/n*100)}%).</b>` + (ret ? ` En ${ret} llamada(s) la gestión termina en retención con descuento.` : ""));
-    if(sinOf) H.push(`<b>En ${sinOf} de ${n} llamadas no hubo ofrecimiento</b> (${Math.round(sinOf/n*100)}%).`);
-    H.push(`<b>${ordE[0].it} es la etapa más débil de la estructura</b> (índice ${fmt(ordE[0].idx)}; ${ordE[0].malos} de ${n} en «Bajo» o «No lo hizo»).`);
-    const ofreceSinRebate = R.filter(r=>r.est[1]!=="No lo hizo" && r.est[2]==="No lo hizo").length;
-    if(ofreceSinRebate) H.push(`<b>${ofreceSinRebate} llamada(s) ofrecen pero no rebaten:</b> se acepta la primera objeción del cliente.`);
-    H.push(`<b>${ordH[0].it} es la habilidad más crítica</b> (índice ${fmt(ordH[0].idx)}; ${ordH[0].malos} «Bajo» o «No lo hizo»).`);
-    H.push(`<b>${ordH[ordH.length-1].it} es la fortaleza</b> (índice ${fmt(ordH[ordH.length-1].idx)}).`);
-    if(vEqOk.length>1) H.push(`<b>Evolución:</b> el índice del equipo pasa de ${fmt(vEqOk[0])} (${dm(ult[0])}) a ${fmt(vEqOk[vEqOk.length-1])} (${dm(ult[ult.length-1])}).`);
-    if(rk.length>1){
-      const peor = rk[rk.length-1], mejor = rk[0];
-      H.push(`<b>${esc(mejor.corto)}</b> tiene el mejor índice (${fmt(mejor.t)}) y <b>${esc(peor.corto)}</b> el más bajo (${fmt(peor.t)}, ${peor.n} monitoreo(s)).`);
-    }
-    const cajas = sinRepetir(R.map(r=>r.caja));
-    if(cajas.length>1) H.push(`<b>Por caja:</b> ` + cajas.map(cj=>{ const L=R.filter(r=>r.caja===cj); return `${esc(cj)} ${fmt(pct(L.reduce((s,r)=>s+pts(r.est)+pts(r.hab),0),L.length*9))} (${L.length})`; }).join(" · ") + ".");
-    if(mism) H.push(`<b>Calidad del dato:</b> en ${mism} de ${conReal.length} llamadas el motivo registrado no coincide con el motivo de renuncia del comentario.`);
-    [...ordE.slice(0,2), ...ordH.slice(0,2)].filter(x=>x.idx<66).forEach(x=>A.push(ACCIONES[x.it]));
-    if(sinOf/n>=.2) A.unshift(`<b>Ofrecimiento obligatorio en llamadas abordables:</b> seguimiento diario de las llamadas sin ofrecimiento por supervisor.`);
-    if(desc && directo) A.push(`<b>Descuento como último recurso:</b> reforzar la secuencia sondeo → beneficio → rebate → descuento → cierre.`);
-    if(rk.length>1){ const peor = rk[rk.length-1]; const ip = [...indices(peor.L,"est",EST),...indices(peor.L,"hab",HAB)].sort((a,b)=>a.idx-b.idx)[0];
-      A.push(`<b>Acompañamiento a ${esc(peor.corto)}</b> (escucha o susurro), enfocado en ${ip.it.toLowerCase()}.`); }
-    if(mism) A.push(`<b>Corregir el formulario:</b> que «Qué dijo el cliente» refleje el motivo real para que el Pareto de objeciones sea útil.`);
-    $('ofc-hall').innerHTML = H.map(h=>`<li>${h}</li>`).join("");
-    $('ofc-acc').innerHTML = A.length ? A.map(a=>`<li>${a}</li>`).join("") : `<li>Sostener el nivel actual: todas las etapas y habilidades están en «Bueno».</li>`;
+    // ---------- hallazgos (tarjetas) y plan de acción (tabla), por reglas ----------
+    // Cada hallazgo: nivel (critico | vigilar | fortaleza), indicador, texto y las llamadas que lo explican.
+    // Cada hallazgo crítico o a vigilar genera una acción con prioridad, a quién va dirigida (ejecutivos de
+    // esas llamadas), responsable (sus supervisores), meta (del valor actual al siguiente nivel) y seguimiento.
+    const pctN = (a,b) => b ? Math.round(a/b*100) : 0;
+    const meta = v => v<50 ? 50 : v<66 ? 66 : null;            // siguiente nivel: «Regular» (50) o «Bueno» (66)
+    const nivelDe = v => v<33 ? "critico" : v<66 ? "vigilar" : "fortaleza";
+    // "CLAUDIA ALESSANDRA ELIZABETH MOSCOL VENTURA" -> "Claudia Moscol" (primer nombre + apellido paterno)
+    const jefeCorto = j => { if(!j) return null; const w = j.split(/\s+/); const t = (w.length>=3 ? [w[0], w[w.length-2]] : w).join(" ").toLowerCase();
+      return t.replace(/(^|\s)\S/g, c=>c.toUpperCase()); };
+    const malosEn = (key, ix) => R.filter(r=>r[key][ix]==="No lo hizo" || r[key][ix]==="Bajo");
+    const HZ = [], PLAN = [];
+    const hz = (nivel, metrica, titulo, detalle, llamadas, accion, metaTxt, seguimiento) => {
+      HZ.push({nivel, metrica, titulo, detalle, llamadas: llamadas || []});
+      if(accion && nivel!=="fortaleza" && !PLAN.some(p=>p.accion===accion))   // sin acciones repetidas
+        PLAN.push({prio: nivel==="critico" ? "Alta" : "Media", accion, llamadas: llamadas || [], meta: metaTxt || "", seguimiento: seguimiento || ""});
+    };
+    const sinRebate = R.filter(r=>r.est[1]!=="No lo hizo" && r.est[2]==="No lo hizo");
+    // 1) llamadas sin ofrecimiento
+    if(sinOf){ const L = R.filter(r=>r.tags.includes("Sin ofrecimiento")), p = pctN(sinOf,n);
+      hz(p>=20 ? "critico" : "vigilar", p+"%", `En ${sinOf} de ${n} llamadas no hubo ofrecimiento`,
+        "El comentario indica que el ejecutivo no ofreció o todas las etapas de la estructura quedaron en «No lo hizo».", L,
+        "<b>Ofrecimiento en toda llamada abordable:</b> escucha diaria de las llamadas sin ofrecimiento y retroalimentación el mismo día.",
+        `${p}% → menos de 10%`, "Indicador «sin ofrecimiento» de este panel, cada día"); }
+    // 2) etapas de la estructura por debajo de «Bueno» (de la más débil a la más fuerte; máximo 2)
+    const debilesE = ordE.filter(x=>x.idx<66).slice(0,2);
+    debilesE.forEach(x=>{ const L = malosEn("est", x.ix);
+      const extra = x.it==="Rebate" && sinRebate.length ? ` En ${sinRebate.length} de ellas sí hubo ofrecimiento, pero se aceptó la primera objeción.` : "";
+      hz(nivelDe(x.idx), fmt(x.idx), `${x.it}: ${x.ix===ordE[0].ix ? "la etapa más débil" : "etapa por reforzar"} de la estructura`,
+        `${x.malos} de ${n} llamadas en «Bajo» o «No lo hizo».${extra}`, L, ACCIONES[x.it], `${fmt(x.idx)} → ${meta(x.idx)}%`, `Índice de ${x.it.toLowerCase()} en el evolutivo diario`); });
+    // 3) ofrecen pero no rebaten (si Rebate no salió arriba como etapa débil)
+    if(sinRebate.length && !debilesE.some(x=>x.it==="Rebate")) hz("vigilar", sinRebate.length+"/"+n, "Ofrecen pero no rebaten",
+      "Hay ofrecimiento, pero se acepta la primera objeción del cliente sin intentar un rebate.", sinRebate,
+      ACCIONES["Rebate"], `${sinRebate.length} → 0 llamadas`, "Mapa de calor: columna Rebate");
+    // 4) habilidades por debajo de «Bueno» (máximo 2)
+    ordH.filter(x=>x.idx<66).slice(0,2).forEach(x=>{ const L = malosEn("hab", x.ix);
+      hz(nivelDe(x.idx), fmt(x.idx), `${x.it}: ${x.ix===ordH[0].ix ? "la habilidad más crítica" : "habilidad por reforzar"}`,
+        `${x.malos} de ${n} llamadas en «Bajo» o «No lo hizo».`, L, ACCIONES[x.it], `${fmt(x.idx)} → ${meta(x.idx)}%`, `Índice de ${x.it.toLowerCase()} en el panel de habilidades`); });
+    // 5) descuento como primera herramienta
+    if(desc && directo){ const L = R.filter(r=>/directamente|solo ofrece descuento|descuento directo/i.test(r.com||""));
+      hz("vigilar", directo+"/"+desc, "El descuento reemplaza al ofrecimiento",
+        `En ${directo} de las ${desc} llamadas con descuento se ofrece directamente, sin argumentar ni rebatir antes.`, L,
+        "<b>Descuento como último recurso:</b> secuencia sondeo → beneficio → rebate → descuento → cierre.", `${directo} → 0 llamadas con descuento directo`, "Análisis de comentarios: «descuento directo»"); }
+    // 6) ejecutivos con índice crítico (menos de 33%): una sola tarjeta y una sola acción
+    const criticos = rk.filter(x=>x.t<33).reverse();
+    if(criticos.length){
+      const detalleEj = criticos.slice(0,5).map(x=>{ const pi = [...indices(x.L,"est",EST),...indices(x.L,"hab",HAB)].sort((a,b)=>a.idx-b.idx)[0];
+        return `${esc(x.corto)} ${fmt(x.t)} (${pi.it.toLowerCase()})`; }).join(" · ") + (criticos.length>5 ? ` · y ${criticos.length-5} más` : "");
+      hz("critico", criticos.length+"/"+rk.length, `${criticos.length} ejecutivo(s) con índice crítico (menos de 33%)`,
+        `Entre paréntesis, su ítem más débil: ${detalleEj}.`, criticos.flatMap(x=>x.L),
+        "<b>Acompañamiento individual</b> (escucha o susurro) en el ítem más débil de cada uno.", "Cada uno a 50% o más", "Ranking por ejecutivo, próximos monitoreos"); }
+    // 7) calidad del dato
+    if(mism){ const L = conReal.filter(r=>r.motReal!==r.motReg);
+      hz("vigilar", mism+"/"+conReal.length, "El motivo registrado no coincide con el comentario",
+        "«Qué dijo el cliente» no refleja el motivo de renuncia escrito por el monitor; el Pareto de objeciones queda sesgado.", L,
+        "<b>Corregir el registro:</b> que «Qué dijo el cliente» refleje el motivo real (competencia, no uso, económico…).", `${mism} → 0 diferencias`, "Análisis de comentarios: motivo registrado vs. real"); }
+    // 8) evolución del equipo
+    if(vEqOk.length>1){ const d = vEqOk[vEqOk.length-1]-vEqOk[0];
+      hz(d>=0 ? "fortaleza" : "vigilar", (d>=0?"+":"")+d.toFixed(1).replace('.',',')+" pp", d>=0 ? "El índice del equipo mejora" : "El índice del equipo retrocede",
+        `Pasa de ${fmt(vEqOk[0])} (${dm(ult[0])}) a ${fmt(vEqOk[vEqOk.length-1])} (${dm(ult[ult.length-1])}).`, R.filter(r=>ult.includes(r.fecha)),
+        d<0 ? "<b>Revisión con supervisores</b> de los días con caída en el evolutivo diario." : null, d<0 ? `Recuperar ${fmt(vEqOk[0])}` : "", "Evolutivo diario"); }
+    // 9) fortalezas: ítems en «Bueno», mejor ejecutivo y ventas concretadas
+    [...ixE, ...ixH].filter(x=>x.idx>=66).sort((a,b)=>b.idx-a.idx).slice(0,2).forEach(x=>
+      hz("fortaleza", fmt(x.idx), `${x.it} en nivel «Bueno»`, "Usar estas llamadas como ejemplo en las retroalimentaciones del equipo.",
+        R.filter(r=>(EST.includes(x.it) ? r.est[EST.indexOf(x.it)] : r.hab[HAB.indexOf(x.it)])==="Bueno")));
+    if(rk.length>1 && rk[0].t>=50) hz("fortaleza", fmt(rk[0].t), `${rk[0].corto}: mejor índice del filtro`, `${rk[0].n} monitoreo(s). Sus llamadas sirven como modelo para el resto.`, rk[0].L);
+    if(ventas) hz("fortaleza", ventas+"/"+n, `${ventas} venta(s) concretada(s)`, "Llamadas con venta: revisar qué funcionó en el sondeo y el cierre.", R.filter(r=>r.venta==="SI"));
+
+    const orden = {critico:0, vigilar:1, fortaleza:2}, etiqueta = {critico:"Crítico", vigilar:"A vigilar", fortaleza:"Fortaleza"};
+    HZ.sort((a,b)=>orden[a.nivel]-orden[b.nivel]);
+    const fortalezas = HZ.filter(h=>h.nivel==="fortaleza");     // máximo 4 fortalezas
+    if(fortalezas.length>4) fortalezas.slice(4).forEach(f=>HZ.splice(HZ.indexOf(f),1));
+    const cuenta = k => HZ.filter(h=>h.nivel===k).length;
+    $('ofc-hzRes').innerHTML = `<span style="background:#FEE4E2;color:#B42318">${cuenta("critico")} crítico(s)</span><span style="background:#FEF0C7;color:#B54708">${cuenta("vigilar")} a vigilar</span><span style="background:#D1FADF;color:#05603A">${cuenta("fortaleza")} fortaleza(s)</span>`;
+    $('ofc-hall').innerHTML = HZ.map((h,i)=>`<div class="hz ${h.nivel}"><div class="hz-top"><span class="hz-tipo">${etiqueta[h.nivel]}</span><span class="hz-met">${h.metrica}</span></div>
+      <div class="hz-tit">${esc(h.titulo)}</div><div class="hz-det">${h.detalle}</div>${h.llamadas.length ? `<button type="button" class="hz-ver" data-h="${i}">Ver ${h.llamadas.length} llamada(s)</button>` : ""}</div>`).join("");
+    $('ofc-hall').querySelectorAll('.hz-ver').forEach(b=>b.onclick=()=>{ const h = HZ[+b.dataset.h]; listaModal(esc(h.titulo), h.llamadas); });
+
+    PLAN.sort((a,b)=>(a.prio==="Alta"?0:1)-(b.prio==="Alta"?0:1) || b.llamadas.length-a.llamadas.length);
+    const totalEj = rk.length;
+    const ejecutivosDe = L => { const c = {}; L.forEach(r=>{ c[r.corto] = (c[r.corto]||0)+1; }); return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(e=>e[0]); };
+    const esEquipo = L => totalEj>3 && ejecutivosDe(L).length/totalEj > .6;   // brecha de casi todo el equipo
+    const dirigido = L => { const nom = ejecutivosDe(L); if(!nom.length) return "Equipo";
+      if(esEquipo(L)) return `<b>Todo el equipo</b> (${nom.length} de ${totalEj})<br><span class="meta-s">Prioridad: </span>` + nom.slice(0,3).map(x=>`<span class="who-chip">${esc(x)}</span>`).join("");
+      return nom.slice(0,4).map(x=>`<span class="who-chip">${esc(x)}</span>`).join("") + (nom.length>4 ? `<span class="who-chip">+${nom.length-4} más</span>` : ""); };
+    const responsables = L => { const j = sinRepetir(L.map(r=>jefeCorto(r.jefe)));
+      return !j.length ? "Supervisor de la caja" : j.length>3 ? `${j.slice(0,3).join(", ")} y ${j.length-3} supervisor(es) más` : j.join(", "); };
+    $('ofc-acc').innerHTML = PLAN.length ?
+      `<thead><tr><th>Prioridad</th><th>Acción</th><th>Dirigido a</th><th>Responsable</th><th>Meta</th><th>Seguimiento</th></tr></thead><tbody>` +
+      PLAN.map(p=>`<tr><td><span class="prio ${p.prio==="Alta"?'alta':'media'}">${p.prio}</span></td><td>${p.accion}</td><td>${dirigido(p.llamadas)}</td>
+        <td>${esc(responsables(p.llamadas))}</td><td><span class="meta-v">${esc(p.meta)}</span></td><td class="meta-s">${esc(p.seguimiento)}</td></tr>`).join("") + "</tbody>" :
+      `<tbody><tr><td>Sostener el nivel actual: todas las etapas y habilidades están en «Bueno».</td></tr></tbody>`;
+    $('ofc-copiar').onclick = ()=>{
+      const plano = s => String(s||"").replace(/<[^>]+>/g,"");
+      const periodo = dias.length>1 ? `${dmy(dias[0])} al ${dmy(dias[dias.length-1])}` : dmy(dias[0]);
+      const txt = [`PLAN DE ACCIÓN · OFRECIMIENTO COMERCIAL (${periodo}, ${n} monitoreos)`, ""]
+        .concat(PLAN.map((p,i)=>{ const nom = ejecutivosDe(p.llamadas);
+          const quien = esEquipo(p.llamadas) ? `Todo el equipo (${nom.length} de ${totalEj}); prioridad: ${nom.slice(0,3).join(", ")}` : (nom.join(", ") || "Equipo");
+          const jefes = sinRepetir(p.llamadas.map(r=>jefeCorto(r.jefe))).join(", ") || "Supervisor de la caja";
+          return `${i+1}. [${p.prio}] ${plano(p.accion)}\n   Dirigido a: ${quien}\n   Responsable: ${jefes}\n   Meta: ${p.meta} · Seguimiento: ${p.seguimiento}`; }))
+        .join("\n");
+      const ok = ()=>{ $('ofc-copiar').textContent = "¡Copiado!"; setTimeout(()=>{ $('ofc-copiar').textContent = "Copiar plan"; }, 1800); };
+      if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, ()=>prompt("Copia el plan:", txt));
+      else prompt("Copia el plan:", txt);
+    };
     const nivel = v => v>=66?"en nivel «Bueno»":v>=50?"en nivel «Regular»":"por debajo del 50%";
     $('ofc-concl').innerHTML = `<b>Conclusión:</b> el índice de estructura (${fmt(iE)}) queda ${nivel(iE)} y el de habilidades (${fmt(iH)}) ${nivel(iH)}. ` +
       `Las brechas principales son <b>${ordE[0].it.toLowerCase()}</b> y <b>${ordH[0].it.toLowerCase()}</b>, mientras que <b>${ordH[ordH.length-1].it.toLowerCase()}</b> es la fortaleza. ` +
